@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Finance Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #10b981;
+      --danger: #ef4444;
+      --glass-border: rgba(255, 255, 255, 0.1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+
+    body {
+      background: var(--bg-color);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-image: radial-gradient(circle at top right, #1e3a8a, transparent 40%),
+                        radial-gradient(circle at bottom left, #064e3b, transparent 40%);
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1000px;
+      padding: 2rem;
+    }
+
+    .glass-panel {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h1, h2, h3 { margin-bottom: 1rem; font-weight: 600; }
+    
+    .hidden { display: none !important; }
+
+    /* Login Form */
+    #login-view {
+      max-width: 400px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--glass-border);
+      background: rgba(15, 23, 42, 0.6);
+      color: white;
+      font-size: 1rem;
+      outline: none;
+      transition: all 0.2s;
+    }
+    input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(59,130,246,0.3); }
+    
+    button {
+      background: var(--primary);
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover { background: var(--primary-hover); transform: translateY(-1px); }
+
+    .error-msg { color: var(--danger); font-size: 0.875rem; margin-bottom: 1rem; }
+
+    /* Dashboard Main */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+    .header-info { display: flex; align-items: center; gap: 1rem; }
+    .badge {
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      background: rgba(59, 130, 246, 0.2);
+      color: #93c5fd;
+      border: 1px solid rgba(59, 130, 246, 0.5);
+    }
+    .btn-logout { background: transparent; border: 1px solid var(--glass-border); width: auto; color: var(--text-muted); }
+    .btn-logout:hover { background: rgba(255,255,255,0.1); color: white; }
+
+    /* Summary Cards */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .summary-card {
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .summary-title { font-size: 0.875rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .summary-value { font-size: 2.5rem; font-weight: 700; margin-top: 0.5rem; }
+    .val-income { color: var(--success); text-shadow: 0 0 15px rgba(16,185,129,0.3); }
+    .val-expense { color: var(--danger); text-shadow: 0 0 15px rgba(239,68,68,0.3); }
+
+    /* Records Table */
+    .table-wrapper {
+      overflow-x: auto;
+      margin-top: 1rem;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--glass-border); }
+    th { color: var(--text-muted); font-weight: 600; font-size: 0.875rem; }
+    tr:hover { background: rgba(255, 255, 255, 0.02); }
+
+    .tag {
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .tag.income { background: rgba(16,185,129,0.2); color: #6ee7b7; box-shadow: 0 0 5px rgba(16,185,129,0.3); }
+    .tag.expense { background: rgba(239,68,68,0.2); color: #fca5a5; box-shadow: 0 0 5px rgba(239,68,68,0.3); }
+
+    /* Add Record Section */
+    .admin-only { margin-top: 2rem; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- LOGIN VIEW -->
+    <div id="login-view" class="glass-panel">
+      <h2>Welcome Back</h2>
+      <p style="color:var(--text-muted); margin-bottom:1.5rem">Sign in to access your dashboard</p>
+      
+      <div id="login-error" class="error-msg"></div>
+      
+      <input type="text" id="username" placeholder="Username (e.g. admin, analyst, viewer)" />
+      <input type="password" id="password" placeholder="Password (e.g. admin123)" />
+      <button onclick="handleLogin()">Log In</button>
+
+      <div style="margin-top: 1.5rem; font-size: 0.8rem; color:var(--text-muted); text-align: left;">
+        <strong>Demo Accounts:</strong><br/>
+        Admin: admin / admin123<br/>
+        Analyst: analyst / analyst123<br/>
+        Viewer: viewer / viewer123
+      </div>
+    </div>
+
+    <!-- DASHBOARD VIEW -->
+    <div id="dashboard-view" class="hidden">
+      
+      <div class="header">
+        <div>
+          <h1 style="margin:0;">Finance Hub</h1>
+          <p style="color:var(--text-muted); font-size:0.9rem;" id="date-display"></p>
+        </div>
+        <div class="header-info">
+          <span class="badge" id="user-role-badge">Admin</span>
+          <span style="font-weight:600;" id="user-name-display">Hi, Admin</span>
+          <button class="btn-logout" onclick="handleLogout()">Log out</button>
+        </div>
+      </div>
+
+      <!-- Summaries (Viewable by All) -->
+      <div class="summary-grid">
+        <div class="glass-panel summary-card">
+          <div class="summary-title">Total Income</div>
+          <div class="summary-value val-income" id="tot-income">₹0</div>
+        </div>
+        <div class="glass-panel summary-card">
+          <div class="summary-title">Total Expenses</div>
+          <div class="summary-value val-expense" id="tot-expense">₹0</div>
+        </div>
+        <div class="glass-panel summary-card">
+          <div class="summary-title">Net Balance</div>
+          <div class="summary-value" id="net-balance">₹0</div>
+        </div>
+      </div>
+
+      <!-- Records Section (Analyst & Admin) -->
+      <div id="records-section" class="glass-panel hidden">
+        <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+          <h3>Recent Transactions</h3>
+          <p id="records-error" class="error-msg"></p>
+        </div>
+        
+        <div class="table-wrapper">
+          <table id="records-table">
+            <thead>
+              <tr>
+                <th>DATE</th>
+                <th>CATEGORY</th>
+                <th>TYPE</th>
+                <th>AMOUNT</th>
+                <th>NOTES</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Data populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Add Record Section (Admin Only) -->
+      <div id="add-record-section" class="glass-panel admin-only hidden">
+        <h3>Create New Record</h3>
+        <div class="form-row">
+          <input type="number" id="add-amount" placeholder="Amount (e.g. 500)" />
+          <select id="add-type">
+            <option value="income">Income</option>
+            <option value="expense">Expense</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <input type="text" id="add-category" placeholder="Category (e.g. Salary, Utilities)" />
+          <input type="date" id="add-date" />
+        </div>
+        <input type="text" id="add-notes" placeholder="Notes (optional)" />
+        <button onclick="handleAddRecord()">Save Transaction</button>
+        <p id="add-record-msg" style="margin-top: 1rem; font-size: 0.9rem; text-align: center;"></p>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    // State management
+    let token = localStorage.getItem('finance_token');
+    let currentUser = JSON.parse(localStorage.getItem('finance_user'));
+    
+    // Set current date
+    document.getElementById('date-display').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+    async function apiCall(endpoint, method = 'GET', body = null) {
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      
+      const config = { method, headers };
+      if (body) config.body = JSON.stringify(body);
+
+      const res = await fetch(endpoint, config);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || data.errors?.[0]?.msg || 'API Error');
+      return data;
+    }
+
+    function changeView(viewId) {
+      document.getElementById('login-view').classList.add('hidden');
+      document.getElementById('dashboard-view').classList.add('hidden');
+      document.getElementById(viewId).classList.remove('hidden');
+    }
+
+    function formatMoney(amount) {
+      return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
+    }
+
+    async function handleLogin() {
+      const u = document.getElementById('username').value;
+      const p = document.getElementById('password').value;
+      const errEl = document.getElementById('login-error');
+      try {
+        errEl.innerText = 'Loading...';
+        const res = await apiCall('/api/auth/login', 'POST', { username: u, password: p });
+        token = res.token;
+        currentUser = res.user;
+        localStorage.setItem('finance_token', token);
+        localStorage.setItem('finance_user', JSON.stringify(currentUser));
+        errEl.innerText = '';
+        initDashboard();
+      } catch(err) {
+        errEl.innerText = err.message;
+      }
+    }
+
+    function handleLogout() {
+      token = null;
+      currentUser = null;
+      localStorage.removeItem('finance_token');
+      localStorage.removeItem('finance_user');
+      changeView('login-view');
+    }
+
+    async function loadSummaries() {
+      try {
+        const data = await apiCall('/api/dashboard/summary');
+        
+        document.getElementById('tot-income').innerText = formatMoney(data.totalIncome);
+        document.getElementById('tot-expense').innerText = formatMoney(data.totalExpenses);
+        
+        const netEl = document.getElementById('net-balance');
+        netEl.innerText = formatMoney(data.netBalance);
+        if (data.netBalance >= 0) {
+          netEl.style.color = 'var(--success)';
+        } else {
+          netEl.style.color = 'var(--danger)';
+        }
+      } catch (err) {
+         console.error("Summary error:", err);
+      }
+    }
+
+    async function loadRecords() {
+      const tb = document.getElementById('records-table').querySelector('tbody');
+      try {
+        const records = await apiCall('/api/records');
+        tb.innerHTML = '';
+        if (records.length === 0) {
+          tb.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted)">No records found.</td></tr>';
+        }
+        
+        records.forEach(r => {
+          const typeTag = `<span class="tag ${r.type}">${r.type}</span>`;
+          const row = `<tr>
+            <td>${r.date}</td>
+            <td>${r.category}</td>
+            <td>${typeTag}</td>
+            <td style="font-weight:bold;">${formatMoney(r.amount)}</td>
+            <td style="color:var(--text-muted)">${r.notes || '-'}</td>
+          </tr>`;
+          tb.innerHTML += row;
+        });
+      } catch(err) {
+        document.getElementById('records-error').innerText = "Insufficient permissions to view detailed records.";
+      }
+    }
+
+    async function handleAddRecord() {
+      const msgEl = document.getElementById('add-record-msg');
+      try {
+        const body = {
+          amount: parseFloat(document.getElementById('add-amount').value),
+          type: document.getElementById('add-type').value,
+          category: document.getElementById('add-category').value,
+          date: document.getElementById('add-date').value,
+          notes: document.getElementById('add-notes').value
+        };
+        
+        await apiCall('/api/records', 'POST', body);
+        msgEl.innerText = "Record added successfully!";
+        msgEl.style.color = "var(--success)";
+        
+        // Refresh data
+        loadSummaries();
+        loadRecords();
+        
+        // Clear fields
+        document.getElementById('add-amount').value = '';
+        document.getElementById('add-category').value = '';
+        document.getElementById('add-notes').value = '';
+        
+        setTimeout(() => msgEl.innerText = '', 3000);
+      } catch(err) {
+        msgEl.innerText = err.message;
+        msgEl.style.color = "var(--danger)";
+      }
+    }
+
+    function initDashboard() {
+      if(!token) return changeView('login-view');
+      
+      changeView('dashboard-view');
+      
+      // Update User Info
+      document.getElementById('user-name-display').innerText = `Hi, ${currentUser.username}`;
+      document.getElementById('user-role-badge').innerText = currentUser.role;
+
+      // Access Control Display logic
+      if (currentUser.role === 'Admin') {
+        document.getElementById('add-record-section').classList.remove('hidden');
+        document.getElementById('records-section').classList.remove('hidden');
+      } else if (currentUser.role === 'Analyst') {
+        document.getElementById('add-record-section').classList.add('hidden');
+        document.getElementById('records-section').classList.remove('hidden');
+      } else {
+        // Viewer can't see lists or add records
+        document.getElementById('add-record-section').classList.add('hidden');
+        document.getElementById('records-section').classList.add('hidden');
+      }
+
+      loadSummaries();
+      if(currentUser.role === 'Admin' || currentUser.role === 'Analyst') {
+        loadRecords();
+      }
+    }
+
+    window.onload = function() {
+      // Set today's date in form
+      document.getElementById('add-date').valueAsDate = new Date();
+      if(token && currentUser) initDashboard();
+    };
+  </script>
+</body>
+</html>
